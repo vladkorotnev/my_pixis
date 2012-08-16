@@ -1,0 +1,9 @@
+Package: com.vladkorotnev.theone
+Name: The One Demo
+Depends: 
+Version: 1.0.0
+Architecture: iphoneos-arm
+Description: My first demo :D
+Maintainer: Vladislav Korotnev
+Author: Vladislav Korotnev
+Section: Toys

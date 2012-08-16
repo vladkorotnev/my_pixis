@@ -1,0 +1,634 @@
+// huge lot of code here :D
+// ~ vladkorotnev, 2012
+
+
+
+fn audio_callback(
+    $stream, 
+    $userdata, 
+    $channels, 
+    $frames, 
+    $output_time_in_system_ticks, 
+    $in_channels, 
+    $latency_in_frames )
+{
+    if wav_ptr >= wav_size { ret( 0 ) }
+    $c = 0 while( $c < wav_channels )
+    {
+	copy( $channels[ $c ], wav, 0, wav_ptr + $c, $frames, 1, 2 )
+	$c + 1
+    }
+    wav_ptr + $frames * wav_channels
+    ret( 1 )
+}
+
+img = new( 233, 203 )
+size = get_size( img )
+i = 0 while( i < size )
+{
+    x = i % get_xsize( img )
+    if x & 1 { img[ i ] = BLUE } else { img[ i ] = WHITE }
+    if ( i / get_xsize( img ) ) & 1 { img[ i ] = BLUE }
+    i + 1
+}
+
+start_timer( 0 )
+
+palette = new( 256 )
+i = 0 while( i < 128 )
+{
+    v = i
+    v * 2
+    palette[ i ] = get_color( v , v / 2, v / 2 )
+    i + 1
+}
+
+i = 128 while( i < 256 )
+{
+    v = 256 - i
+    v * 2
+    palette[ i ] = get_color( v, v / 2, v )
+    i + 1
+}
+
+plasmapal = new( 256 )
+i = 0 while( i < 128 )
+{
+    v = i
+    v * 2
+    plasmapal[ i ] = get_color( v , v, v / 2 )
+    i + 1
+}
+
+i = 128 while( i < 256 )
+{
+    v = 256 - i
+    v * 2
+    plasmapal[ i ] = get_color( v, v / 4, v )
+    i + 1
+}
+
+scr = get_screen()
+img8 = new( get_xsize( scr ), get_ysize( scr ), INT8 )
+
+wav = load( "sound.wav" )
+wav_ptr = 0
+wav_size = get_size( wav )
+wav_channels = get_prop( wav, "channels" )
+
+set_audio_callback( audio_callback, 0, get_prop( wav, "sample_rate" ), get_type( wav ), wav_channels )
+
+fn pos()
+{
+clear()
+	ts = ""
+	sprintf( ts, "Pos %u", wav_ptr)
+	print( ts, 0,0 )
+
+    frame()
+}
+
+
+xsize = get_xsize( get_screen() )
+ysize = get_ysize( get_screen() )
+hxsize = xsize / 2
+hysize = ysize / 2
+start_timer( 0 )
+scr1 = get_screen()
+scr2 = clone( scr1 )
+hixsize = xsize div 2
+hiysize = ysize div 2
+sa = 128
+sb = -128
+smagn = 128
+
+fn draw_fract()
+{
+    y = -hiysize + yoff while( y < hiysize )
+    {
+	x = -hixsize + xoff while( x < hixsize )
+	{
+	    xx = ( x * magn ) div 128
+	    yy = ( y * magn ) div 128
+	    col = 0 while( col < 256 )
+	    {
+		xxx = ( xx * xx ) div 128
+		yyy = ( yy * yy ) div 128
+		if xxx + yyy > 4 * 128 { go endfor }
+		new_x = xxx - yyy + a
+		new_y = 2 * ( ( xx * yy ) div 128 ) + b
+		xx = new_x
+		yy = new_y
+		col + 8
+	    }
+endfor:
+	    dot( x, y, get_color( col, col, col * 4 ) )
+	    x + 3
+	}
+	y + 3
+    }
+}
+
+
+fn renderer()
+{
+
+if (wav_ptr < 1290000)
+{
+    t = get_timer( 0 ) / 1000
+
+    clear()
+    
+    generator( OP_SIN, img8, t, 512 * sin( t ), sin( t ) / 32, cos( t ) / 32 )
+    replace_values( scr, img8, palette )
+
+    frame()
+}
+
+if ((wav_ptr > 1290000) && (wav_ptr < 3850000)) 
+{
+	t = get_timer( 0 )
+
+	transp( 16 )
+	clear()
+	transp( 255 )
+
+	t_reset()
+
+	t_rotate( t / 20, 0.8, 0.9, 1 )
+	t_scale( 4, 4, 4 )
+
+	bsize = abs( sin( t / 400 ) * 16 )
+	box( -32, -32, bsize, bsize, RED )
+	fbox( 32, -32, bsize, bsize, GREEN )
+
+	dot( 0, 0, WHITE )
+	dot( 64, 0, GREEN )
+	dot( 0, -64, GREEN )
+	dot( -64, 32, ORANGE )
+	dot( 0, 64, WHITE )
+
+	line( 0, 0, 32, 0, RED )
+	line3d( 0, 0, 0, 32, 0, 64, ORANGE )
+
+		if(wav_ptr > 2890000)
+		{
+			print( "The ONE demo", 0, 0, WHITE )
+		}
+		if(wav_ptr > 3000000)
+		{
+			print( "By vladkorotnev", 0, 30, WHITE )
+		}
+
+	frame()
+}
+
+if ((wav_ptr > 3850000) && (wav_ptr < 5160000)) 
+{
+	t_scale( 1.1, 1.1, 1 )
+t_rotate( 0 + (rand()&3)-1, 0, 0, 1 )
+x = ( rand() & 3 ) - 1
+y = ( rand() & 3 ) - 1
+pixi( scr2, 0, 0 )
+t_reset()
+x = ( rand() & 15 ) - 7
+y = ( rand() & 15 ) - 7
+r = rand() & 255
+g = rand() & 255
+b = rand() & 255
+c = get_color( r, g, b )
+s = 1
+fbox( x, y, s, s, c )
+
+frame()
+
+t = scr1
+scr1 = scr2
+scr2 = t
+set_screen( scr1 )
+}
+
+if((wav_ptr > 5200000) && (wav_ptr < 5300000))
+		{
+			print( "MUSIC : ALTIMA - ONE", 10, 0, WHITE )
+			frame()
+		}
+		
+if ((wav_ptr > 5160000) && (wav_ptr < 6580000))
+{
+t_scale( 1.02, 1.02, 1 )
+t_rotate( 1, 0, 0, 1 )
+pixi( scr2, ( rand() & 3 ) - 1, ( rand() & 3 ) - 1 )
+t_reset()
+r = rand() & 255
+g = rand() & 255
+b = rand() & 255
+x = ( rand() & 15 ) - 7
+y = ( rand() & 15 ) - 7
+s = 1
+fbox( x, y, s, s, get_color( r, g, b ) )
+
+
+
+frame()
+
+t = scr1
+scr1 = scr2
+scr2 = t
+set_screen( scr1 )
+}
+
+if ((wav_ptr > 6580000) && (wav_ptr < 8010000)) {
+	    step + 1
+    a = sa - 3*step
+    b = sb + 1*step
+    magn = smagn + 2*step
+    xoff + 1 if xoff > 1 { yoff + 1 } xoff & 1 yoff & 1
+    draw_fract()
+	frame()
+}
+
+if ((wav_ptr > 6580000) && (wav_ptr < 6700000)) {
+			clear( BLACK )
+			print( "HUGE HELLO TO:", 10, 0, WHITE )
+			//frame()
+}
+
+if ((wav_ptr > 6700000) && (wav_ptr < 7000000)) {
+			clear( BLACK )
+			print( "NIGHTRADIO", -20, 0, ORANGE )
+			//frame()
+}
+if ((wav_ptr > 7000000) && (wav_ptr < 7300000)) {
+			clear( BLACK )
+			print( "YVITALYV", 20, 0, RED )
+			//frame()
+}
+if ((wav_ptr > 7300000) && (wav_ptr < 7600000)) {
+			clear( BLACK )
+			print( "KSHIZOKU", -20, 0, YELLOW )
+			//frame()
+}
+if ((wav_ptr > 7600000) && (wav_ptr < 7900000)) {
+			clear( BLACK )
+			print( "CODEDIT", 20, 0, GREEN )
+			//frame()
+}
+
+if ((wav_ptr > 8010000) && (wav_ptr < 9600000)) {
+	t = get_timer( 0 )
+	t / 2000
+
+	clear()
+	scr = get_screen()
+xsize = get_xsize( scr )
+ysize = get_ysize( scr )
+	o = 0
+	p = 0
+	y = 0
+	while( y < ysize )
+		{
+		x = 0
+		while( x < xsize )
+		{
+			o = sin( x / 32 + t ) + cos( y / 32 + t )
+			o * 256
+			scr[ p ] = get_color( o / 2, o / 8, o / 16 )
+			p + 2
+			x + 1
+		}
+		y + 1
+	}
+	if ((wav_ptr > 8100000) && (wav_ptr < 8400000)) {
+			print( "THEOLEGFILMS", 20, 30, WHITE )
+	}
+	if (wav_ptr == 8400000) {
+		clear( BLACK )
+	}
+	if ((wav_ptr > 8400000) && (wav_ptr < 8700000)) {
+			print( "MUKUCHI_CHAN", -30, -20, YELLOW )
+	}
+	if (wav_ptr == 8700000) {
+		clear( BLACK )
+	}
+	if ((wav_ptr > 8700000) && (wav_ptr < 9000000)) {
+			print( "KATANA", 0, 0, WHITE )
+	}
+	if (wav_ptr == 9000000) {
+		clear( BLACK )
+	}
+	if ((wav_ptr > 9300000) && (wav_ptr < 9600000)) {
+			print( "AND EVERYONE ELSE! :)", 0, 0, WHITE )
+	}
+	if (wav_ptr == 9600000) {
+		clear( BLACK )
+	}
+	set_screen(scr)
+	frame()
+}
+if (wav_ptr == 9600000) {
+start_timer( 1 )
+}
+if ((wav_ptr > 9600000) && (wav_ptr < 10560000)) {
+	t = get_timer( 1 ) * 50000
+
+	clear( #202020 )
+
+	transp( 32 )
+	pixi( img, 0, 0, WHITE, sin( t ) * 16, sin( t )  * 16 )
+	//pixi( img, 0, 0, WHITE, 1, 1 )
+
+	//box( -92, -1000, 0, 2000 )
+
+	
+
+	frame()
+}
+
+if (wav_ptr == 10560000) {
+	clear( BLACK )
+}
+
+if ((wav_ptr > 10560000) && (wav_ptr < 11910000)) {
+	transp( 230 )
+	t_scale( 1.1, 1.1, 1 )
+	t_rotate( 0 + (rand()&3)-1, 0, 0, 1 )
+	x = ( rand() & 3 ) - 1
+	y = ( rand() & 3 ) - 1
+	pixi( scr2, 0, 0 )
+	t_reset()
+	transp( 256 )
+	x = ( rand() & 15 ) - 7
+	y = ( rand() & 15 ) - 7
+	r = rand() & 255
+	g = rand() & 255
+	b = rand() & 255
+	c = get_color( r, g, b )
+	s = 1
+	fbox( x, y, s, s, c )
+
+	frame()
+
+	t = scr1
+	scr1 = scr2
+	scr2 = t
+	set_screen( scr1 )
+}
+
+if ((wav_ptr > 11910000) && (wav_ptr < 13670000)) {
+	t = get_timer( 0 )
+	t / 500
+
+	clear()
+
+	y = -64
+	x = -xsize/2
+	while( x < xsize / 2 )
+	{
+		tt = t + x / 16
+		dot( x, y + tan( t )*t + (wav_ptr / 100000) , WHITE )
+		v = tan( tt * 1.1 ) * tanh( tt / 2 + x / 4 ) * 32
+		dot( x, 32 + y + v, WHITE )
+		dot( x, 64 + y + ( sin( tt * 3 ) + cos( tt + t ) ) * 16 + (wav_ptr / 100000) - 100, WHITE )
+		dot( x, 100 + y + ( rand() & 310 ), WHITE )
+		//line( x, 128 + y + v, x, ysize / 2, get_color( 129 - v * 8, v * 5, v * 9 ) )
+		x + 1
+	}
+
+
+	frame()
+}
+
+if ((wav_ptr > 13670000) && (wav_ptr < 14610000)) {
+ t = get_timer( 0 ) / 256
+
+    transp( 256 )
+    clear();
+    pixi( img, 0, 0 )
+
+    effector( EFF_NOISE, 128, WHITE, -2000, -2000, 4000, 4000, 1, ( sin( t / 4 ) + 1 ) * 64 )
+    effector( EFF_NOISE, 256, YELLOW, -100, -100 + sin(t)*32, 95, 95 )
+    effector( EFF_NOISE, 256, WHITE, 5, -100 + cos(t)*32, 95, 95, sin( t ) * 8, cos( t ) * 8 )
+    effector( EFF_HBLUR, ( sin( t ) + 1 ) * 64, WHITE, -100 + sin(t)*32, 5, 95, 95 )
+    effector( EFF_VBLUR, ( sin( t ) + 1 ) * 64, WHITE, 5 + cos(t)*32, 5, 95, 95 )
+    
+    frame()	
+}
+
+if ((wav_ptr > 14610000) && (wav_ptr < 16120000)) {
+    t = get_timer( 0 ) / 1000
+
+    clear()
+    
+    generator( OP_SIN, img8, t, 512 * sin( t ), sin( t ) / 32, cos( t ) / 32 )
+    replace_values( scr, img8, palette )
+
+    frame()
+}
+
+if ((wav_ptr > 16120000) && (wav_ptr < 17380000)) {
+	    t = get_timer( 0 ) / 1000
+	scr = get_screen()
+    clear()
+    
+    generator( OP_SIN8, img1, t, 128, cos( t / 2 ) / 53, cos( t / 4 ) / 44 )
+    generator( OP_SIN8, img2, t / 2, 128, sin( t / 3 ) / 50, sin( t / 3 ) / 48 )
+    op_ccn( OP_MUL_DIV, img1, img2, 128 )
+    generator( OP_SIN8, img2, t / 3, 128, cos( t / 4 ) / 23, sin( t / 5 ) / 88 )
+    op_ccn( OP_MUL_DIV, img1, img2, 128 / 2 )
+    replace_values( scr, img1, plasmapal )
+	set_screen (scr)
+    frame()
+    scr1 = get_screen()
+    scr2 = clone (scr1)
+}
+
+if ((wav_ptr > 17380000) && (wav_ptr < 18130000)) 
+{
+	t_scale( 1.1, 1.1, 1 )
+t_rotate( 0 + (rand()&10)-1, 0, 0, 1 )
+x = ( rand() & 10 ) - 1
+y = ( rand() & 10 ) - 1
+pixi( scr2, 0, 0 )
+t_reset()
+x = ( rand() & 15 ) - 7
+y = ( rand() & 15 ) - 7
+r = rand() & 255
+g = rand() & 255
+b = rand() & 255
+c = get_color( r, g, b )
+s = 1
+fbox( x, y, s, s, c )
+
+frame()
+
+t = scr1
+scr1 = scr2
+scr2 = t
+set_screen( scr1 )
+}
+
+if ((wav_ptr > 18130000) && (wav_ptr < 20190000)) {
+	transp( 230 )
+	t_scale( 1.1, 1.1, 1 )
+	t_rotate( 0 + (rand()&10)-1, 0, 0, 1 )
+	x = ( rand() & 10 ) - 1
+	y = ( rand() & 10 ) - 1
+	pixi( scr2, 0, 0 )
+	t_reset()
+	transp( 256 )
+	x = ( rand() & 15 ) - 7
+	y = ( rand() & 15 ) - 7
+	if (wav_ptr < 18740000) {
+		r = rand() & 255
+		g = rand() & 255
+		b = rand() & 255
+	}
+	
+	if ((wav_ptr >= 18740000) && (wav_ptr < 19000000)) {
+		r = 100
+		g = 100
+		b = 200
+	}
+	if ((wav_ptr >= 19000000) && (wav_ptr < 19300000)) {
+		r = 100
+		g = 200
+		b = 100
+	}
+	if ((wav_ptr >= 19300000) && (wav_ptr < 19600000)) {
+		r = 200
+		g = 100
+		b = 100
+	}
+	if (wav_ptr > 1925) {
+		 effector( EFF_NOISE, 128, WHITE, -2000, -2000, 4000, 4000, 1, ( sin( t / 4 ) + 1 ) * 64 )
+	}
+	c = get_color( r, g, b )
+	s = rand() & 10
+	fbox( x, y, s, s, c )
+
+	frame()
+
+	t = scr1
+	scr1 = scr2
+	scr2 = t
+	set_screen( scr1 )
+}
+
+if ((wav_ptr > 20190000) && (wav_ptr < 21620000)) 
+{
+	t_scale( 2, 2, 2 )
+t_rotate( 0 + (rand()&10)-1, 0, 0, 1 )
+x = ( rand() & 10 ) - 1
+y = ( rand() & 10 ) - 1
+pixi( scr2, 0, 0 )
+t_reset()
+x = ( rand() & 15 ) - 7
+y = ( rand() & 15 ) - 7
+r = rand() & 255
+g = rand() & 255
+b = rand() & 255
+c = get_color( r, g, b )
+s = 1
+fbox( x, y, s, s, c )
+
+frame()
+
+t = scr1
+scr1 = scr2
+scr2 = t
+set_screen( scr1 )
+sleep(10)
+}
+
+if ((wav_ptr > 21620000) && (wav_ptr < 24100000))
+{
+t_scale( 2, 2, 1 )
+t_rotate( 1, 0, 0, 1 )
+pixi( scr2, ( rand() & 3 ) - 1, ( rand() & 3 ) - 1 )
+t_reset()
+r = rand() & 255
+g = rand() & 255
+b = rand() & 255
+x = ( rand() & 15 ) - 7
+y = ( rand() & 15 ) - 7
+s = 1
+fbox( x, y, s, s, get_color( r, g, b ) )
+
+
+
+frame()
+
+t = scr1
+scr1 = scr2
+scr2 = t
+set_screen( scr1 )
+}
+
+if ((wav_ptr > 24100000) && (wav_ptr < 25550000)) 
+{
+t_scale( 1.2, 1.2, 1 )
+t_rotate( 1, 1.1, 1, 1 )
+pixi( scr2, ( rand() & 3 ) - 1, ( rand() & 3 ) - 1 )
+t_reset()
+r = rand() & 255
+g = rand() & 255
+b = rand() & 255
+x = ( rand() & 5 ) - 7
+y = ( rand() & 5 ) - 7
+s = 1
+fbox( x, y, s, s, get_color( r, g, b ) )
+
+
+
+frame()
+
+t = scr1
+scr1 = scr2
+scr2 = t
+set_screen( scr1 )
+	
+}
+if ((wav_ptr > 25550000) && (wav_ptr < 26800000))
+{
+t = get_timer( 0 )
+
+	transp( 50 )
+	clear()
+	transp( 255 )
+
+	t_reset()
+
+	t_rotate( t / 20, 1, 1, 1 )
+	t_scale( 2, 2, 2 )
+
+		
+			print( "That was cool,", 0, 0, WHITE )
+		
+			print( "wasn't it? ^_^", 0, 30, WHITE )
+		
+	frame()
+	//sleep(100)
+}
+if (wav_ptr > 26800000) {
+	clear()
+	print( "The ONE demo", 0, 0, WHITE )
+		
+			print( "by vladkorotnev", 0, 20, WHITE )
+			print( "2012", 0, 30, WHITE )
+			print( "Music: ALTIMA - ONE", 0, 40, WHITE )
+	frame()
+}
+}
+
+
+start_pos = 0
+if (wav_ptr < start_pos) {
+	wav_ptr = start_pos
+}
+
+while( wav_ptr < wav_size )
+{
+renderer()
+//pos()
+}

@@ -1,0 +1,91 @@
+
+xsize = get_xsize( get_screen() )
+ysize = get_ysize( get_screen() )
+hxsize = xsize / 2
+hysize = ysize / 2
+fftsize = 512
+fn audio_callback(
+    $stream, 
+    $userdata, 
+    $channels, 
+    $frames, 
+    $output_time_in_system_ticks, 
+    $in_channels, 
+    $latency_in_frames )
+{
+    if wav_ptr >= wav_size { ret( 0 ) }
+    $c = 0
+    while( $c < wav_channels )
+    {
+	copy( $channels[ $c ], wav, 0, wav_ptr + $c, $frames, 1, 2 )
+	$c + 1
+    }
+    //copy (buf,wav,0,wav_ptr,xsize,1,1)
+	 copy (re,wav,0,wav_ptr,fftsize,1,1)
+    wav_ptr + $frames * wav_channels
+    ret( 1 )
+}
+begin: // hello
+fname = file_dialog("Open","wav","lol","")
+if fname == -1 { go end }
+buf = new ( xsize, 1, FLOAT32 )
+clean (buf)
+im = new ( fftsize, 1, FLOAT32 )
+clean (im)
+re = new ( fftsize, 1, FLOAT32 )
+clean (re)
+wav = load( fname )
+if (wav == -1) { go end }
+wav_ptr = 0
+wav_size = get_size( wav )
+wav_channels = get_prop( wav, "channels" )
+
+set_audio_callback( audio_callback, 0, get_prop( wav, "sample_rate" ), get_type( wav ), wav_channels )
+
+y = 0
+fputs( "WAV file loaded.\n" )
+start_timer(0)
+kr = 200
+kg = 200
+kb = 300
+
+while( 1 )
+{
+	fft(0,im,re)
+	clear()
+	x = -hxsize while (x < hxsize) {
+		
+		y = sqrt( im[ hxsize+x ] * im[ hxsize+x ] + re[ hxsize+x ] * re[ hxsize+x ] )
+		// в выражении, которое € выше привел, x от 0 до fftsize/2 означает частоты от 0 гц до 22050 гц
+		if (hxsize+x >= fftsize/2 - 100) {y = 0}
+			f = 140 
+		preb = b
+		b = sqrt( im[ f ] * im[ f ] + re[ f ] * re[ f ] )
+		if (abs(preb - b) >= 10000) { fputs ("BEAT")
+		clear(WHITE)}
+		
+		
+	
+		y / 200
+		y = -y + hysize
+		
+		dot (x,y,GREEN)
+		if ( hxsize+x == f) {
+		dot (x,y,RED)
+		ts = ""
+		sprintf(ts,"RED dot v: %f",b)
+		print(ts)
+		}
+		
+		
+	
+		x + 1
+	}
+	frame()
+	clean (im)
+	clean (re)
+	copy (re,wav,0,wav_ptr,fftsize,1,1)
+    if wav_ptr >= wav_size { go begin }
+}
+end:
+fputs( "Program finished.\n" )

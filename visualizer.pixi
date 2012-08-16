@@ -1,0 +1,120 @@
+fn audio_callback(
+    $stream, 
+    $userdata, 
+    $channels, 
+    $frames, 
+    $output_time_in_system_ticks, 
+    $in_channels, 
+    $latency_in_frames )
+{
+    if wav_ptr >= wav_size { ret( 0 ) }
+    $c = 0 while( $c < wav_channels )
+    {
+	copy( $channels[ $c ], wav, 0, wav_ptr + $c, $frames, 1, 2 )
+	$c + 1
+    }
+	copy ( re, wav, 0,wav_ptr,ffts,1,1)
+	copy ( sb, wav, 0,wav_ptr,ffts,1,1)
+    wav_ptr + $frames * wav_channels
+    ret( 1 )
+}
+file = file_dialog( "Open WAV", "", "fff" )
+if file == -1 { go end }
+start_timer (0)
+ffts = 2048
+kR = 0
+kG = 0
+kB = 0
+ktR = 70
+ktG = 70
+ktB = 100
+
+wav = load( file )
+if wav == -1 {go end}
+ts = ""
+sprintf( ts, "WAV Sample Rate: %d\n", get_prop( wav, "sample_rate" ) ) fputs( ts )
+sprintf( ts, "WAV Channels: %d\n", get_prop( wav, "channels" ) ) fputs( ts )
+wav_ptr = 0
+wav_size = get_size( wav )
+wav_channels = get_prop( wav, "channels" )
+set_audio_callback( audio_callback, 0, get_prop( wav, "sample_rate" ), get_type( wav ), wav_channels )
+im = new( ffts, 1, FLOAT32 )
+clean( im )
+re = new( ffts, 1, FLOAT32 )
+clean( re )
+sb= new( ffts, 1, FLOAT32 )
+clean( sb )
+while (1) {
+transp( 150 )
+	clear()
+	transp( 256 )
+	fft(0,im,re,ffts)
+	xs = get_xsize ( get_screen() )
+	ys = get_ysize ( get_screen() )
+	hxs = xs / 2
+	hys = ys / 2
+	inv = get_color(255-(2.55*kR),255-(2.55*kG),255-(2.55*kB))
+	//nc = get_color( sb[x+5]/10,sb[x+10]/10,sb[x+15]/10)
+	x = 0 while (x < xs) {
+		Y = sqrt ( im[x+50]*im[50+x] + re[50+x]*re[x+50] )
+		Y / 1000
+		Y = Y
+		 
+	
+		
+		line(x-hxs,-hys,x-hxs,-sb[x]/50,inv)
+		//line(x-hxs,sb[x]/100,x-hxs,hys+Y,get_color(2.55 * kR,2.55 * kG,2.55 * kB))
+		
+		//dot(x-hxs,-sb[x]/100,get_color(255-(2.55*kR),255-(2.55*kG),255-(2.55*kB)))
+		x + 1
+	}
+	effector( EFF_HBLUR, 64, WHITE, -hxs, -hys, xs, ys )
+	effector( EFF_VBLUR, 64, WHITE, -hxs, -hys, xs, ys )
+	 x = 0 while (x < xs) {
+		Y = sqrt ( im[x]*im[x] + re[x]*re[x] )
+		Y / 1000
+		Y = Y
+
+		
+		line(x-hxs,sb[x]/100,x-hxs,hys+Y,get_color(2.55 * kR,2.55 * kG,2.55 * kB))
+		
+		x + 2
+	}
+	// effector( EFF_HBLUR, 32, WHITE, -hxs, -hys, xs, ys )
+	effector( EFF_VBLUR, 32, WHITE, -hxs, -hys, xs, ys )
+	t = get_timer(0)
+		//ts = ""
+		//sprintf(ts,"%u\n",t)
+		//fputs(ts)
+		
+if (t / 100) - (t div 100) == 0 {
+	ktR = rand() % 100
+	ktG = rand() % 100
+	ktB = rand() % 100
+}
+if (ktR > kR) {
+	kR + 1
+}
+if (ktR < kR) {
+	kR - 1
+}
+if (ktG > kG) {
+	kG + 1
+}
+if (ktG < kG) {
+	kG - 1
+}
+if (ktB > kB) {
+	kB + 1
+}
+if (ktB < kB) {
+	kB - 1
+}
+
+	frame()
+	if wav_ptr >= wav_size { go end }
+	clean(im)
+	//clean(re)
+}
+
+end:

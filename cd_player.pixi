@@ -1,0 +1,240 @@
+
+fn audio_callback(
+    $stream,
+    $userdata,
+    $channels,
+    $frames,
+    $output_time_in_system_ticks,
+    $in_channels,
+    $latency_in_frames )
+{
+// Read bytes. If 0 or less, next track.
+if  fread(buf,portion,f) <= 0 {go nexttrak}
+	//Pointer
+	fptr + portion
+//Usual sound routinr
+    $c = 0
+    while( $c < 2 )
+    {
+        copy( $channels[ $c ], buf, 0, $c, $frames, 1, 2 )
+        $c + 1
+    }
+    //Visual buffers
+	copy ( re, buf, 0,0,portion,1,1)
+	copy ( sb, buf, 0,0,portion,1,1)
+    ret( 1 )
+}
+//Track number
+traknum = 1
+//Visuals purposes
+start_timer (0)
+vis_num = 0
+kR = 0
+kG = 0
+kB = 0
+ktR = 70
+ktG = 70
+ktB = 100
+
+	xs = get_xsize ( get_screen() )
+	ys = get_ysize ( get_screen() )
+	hxs = xs / 2
+	hys = ys / 2
+
+// Track Playing Routine starts here
+playtrak:
+tp = "" // temp string
+sprintf(tp,"/dev/disk1s%u",traknum) // Opens /dev/disk1s<TRACK>, CHANGE FOR YOUR SYSTEM
+f = fopen (tp,"rb") // Opens
+portion = 2048 //FRAME SIZE
+ffts = portion // FFT Size
+set_audio_callback( audio_callback, 0, 44100, INT16, 2 ) // Usual audio callback
+buf = new ( portion, 1, INT16 ) //Buffer for read
+clean (buf)
+im = new( ffts, 1, FLOAT32 ) // Buffer for FFT
+clean( im )
+re = new( ffts, 1, FLOAT32 ) // Buffer for FFT
+clean( re )
+sb= new( ffts, 1, FLOAT32 ) // Buffer for VIS
+clean( sb ) 
+vis_num = 0 // Current VIS
+fn cv( $color ) // Cool Visual of $color
+{
+		scr = get_screen()
+xsize = get_xsize( scr )
+ysize = get_ysize( scr )
+hxsize = xsize/2
+c = 0
+	x = -hxsize while( x < hxsize )
+    {
+    
+	dot( x, buf[ hxsize+x ] / 1024, $color )
+	x + 1
+    }
+
+} // End Cool Visual
+fn cvR( $color , $rate ) // Cool Visual of $color at $rate
+{
+		scr = get_screen()
+xsize = get_xsize( scr )
+ysize = get_ysize( scr )
+hxsize = xsize/2
+c = 0
+	x = -hxsize while( x < hxsize )
+    { 
+	line(x, -buf[ hxsize+x ]/512, x, buf[ hxsize+x ]/512, $color)
+	x + $rate
+    }
+
+}
+
+fn render_vis_f() { // Renders Visual #2 (key DOWN)
+
+transp( 150 ) // Transparency (fade) Effect
+	clear()   
+	transp( 256 )
+	fft(0,im,re,portion) //FFT 
+
+	inv = get_color(255-(2.55*kR),255-(2.55*kG),255-(2.55*kB))
+	// inverted color of kR/kG/kB
+	x = 0 while (x < xs) {
+		Y = sqrt ( im[x+50]*im[50+x] + re[50+x]*re[x+50] )
+		Y / 1000
+	line(x-hxs,-hys,x-hxs,-sb[x]/50,inv)
+		x + 1
+	}
+	effector( EFF_HBLUR, 64, WHITE, -hxs, -hys, xs, ys )
+	effector( EFF_VBLUR, 64, WHITE, -hxs, -hys, xs, ys )
+	 x = 0 while (x < xs) {
+		Y = sqrt ( im[x]*im[x] + re[x]*re[x] )
+		Y / 1000
+	line(x-hxs,sb[x]/100,x-hxs,hys+Y,get_color(2.55 * kR,2.55 * kG,2.55 * kB))
+x + 2
+	}
+
+	effector( EFF_VBLUR, 32, WHITE, -hxs, -hys, xs, ys )
+
+
+} //END Visual 2
+
+fn render_vis_w() { // Visual #1 (key UP) 
+
+transp(89) //Fade effect
+	clear()
+	transp(255)
+	if (sb[0]/1000 > 4) && (sb[0]/1000 < 1000) { //Thresholded BG 'lights'
+		x = -hxs
+		while (x<hxs) {
+			line(x,-sb[hxs+x]/100,x,sb[hxs+x]/100,get_color(kR*(sb[hxs+x]/10000),kG*(sb[hxs+x]/10000),kB*(sb[hxs+x]/10000)))
+			x + 1
+		}
+		effector(EFF_HBLUR,24)
+		effector(EFF_VBLUR,24)
+		
+	}
+	x = -hxs
+	while (x<hxs) { // Graph, gradiented
+			dot(x,sb[hxs+x]/1000,get_color(kR*(abs(sb[hxs+x])/10000),kG*(abs(sb[hxs+x])/8000),kB*(abs(sb[hxs+x])/10000)))
+			x + 1
+	}
+	kR = rand() % 100 // New colors
+	kG = rand() % 100
+	kB = rand() % 100
+}
+
+fn render_vis_r() { // Visual #3 (key BACKSPACE)
+t = get_timer( 0 )
+
+		transp( 50 )
+		clear()
+	
+		transp( 255 )
+				    cvR(ORANGE,4)
+			   				   
+			    effector( EFF_VBLUR, 12 )
+			    effector( EFF_HBLUR, 12 )
+			  
+			    cv(GREEN)
+		
+		print("vladkorotnev's CD player")
+	
+		
+		frame()
+}
+
+
+ 
+while(1){ // While running 
+t = get_timer(0) // Vis Purposes
+
+if vis_num == 0 { render_vis_w() } // Visual 1
+if vis_num == 1 { render_vis_f() }	// Visual 2
+		if vis_num == 2 { render_vis_r() }	//Visual 3
+		
+while( get_event() ) {  //Keys
+
+if EVT[ EVT_TYPE ] == EVT_QUIT { halt } //Quit 
+
+if EVT[ EVT_KEY ] == KEY_LEFT { 
+fclose(f) //close file
+traknum - 0.5 //prev num
+go playtrak //play
+// Not using GO because fires twice, lol
+} // Left - Prev
+
+if EVT[ EVT_KEY ] == KEY_RIGHT {
+fclose(f) //close file
+traknum + 0.5 //next num
+go playtrak //play
+// Not using GO because fires twice, lol
+} //Right - Next
+
+if EVT[ EVT_KEY ] == KEY_UP { vis_num = 0 } // Up - vis1
+
+if EVT[ EVT_KEY ] == KEY_DOWN { vis_num = 1 }//Down -vis2
+
+if EVT[ EVT_KEY ] == KEY_BACKSPACE { vis_num = 2 } //BKSP - Vis3
+}
+ts = "" //temp str
+sprintf(ts,"CD TRACK: %u",traknum)	
+print(ts,0,-hys+50 ) // display track
+	frame() //render done
+		
+	if (t / 100) - (t div 100) == 0 {
+	ktR = rand() % 100  // new colors once in a while
+	ktG = rand() % 100
+	ktB = rand() % 100
+}
+//animate color transition
+if (ktR > kR) {
+	kR + 1
+}
+if (ktR < kR) {
+	kR - 1
+}
+if (ktG > kG) {
+	kG + 1
+}
+if (ktG < kG) {
+	kG - 1
+}
+if (ktB > kB) {
+	kB + 1
+}
+if (ktB < kB) {
+	kB - 1
+}
+	clean(im) //clean buffer of FFT
+
+}
+//end cycle
+
+nexttrak: //next
+fclose(f) //close file
+traknum + 1 //next num
+go playtrak //play
+
+prevtrak: //prev
+fclose(f) //close file
+traknum - 1 //prev num
+go playtrak //play

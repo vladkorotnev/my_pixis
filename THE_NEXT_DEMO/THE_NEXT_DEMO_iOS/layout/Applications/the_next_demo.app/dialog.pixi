@@ -1,0 +1,108 @@
+fn dialog_draw_button( $name, $y, $ysize, $selected, $inactive )
+{
+    $c = #605040
+    if $inactive { $c = get_blend( BLACK, $c, 100 ) }
+    transp( 256 )
+    fbox( -hxsize + dlg_back_size, $y, xsize - dlg_back_size, $ysize - 1, $c )
+    if $selected
+    {
+	transp( 64 )
+	fbox( -hxsize + dlg_back_size, $y, xsize - dlg_back_size, $ysize - 1, WHITE )
+    }
+    transp( 256 )
+    print( $name, dlg_back_size / 2, $y + $ysize / 2, WHITE )
+}
+
+fn dialog_open( $name, $buttons )
+{
+    $b = get_size( $buttons )
+    if atom_size <= 0 { atom_size = 16 }
+    dlg_back_size = atom_size * 2
+    if $name >= 0
+    {
+	$bsize = ysize div ( $b + 1 )
+    }
+    else
+    {
+	$bsize = ysize div $b
+    }
+    if $bsize > atom_size * 2 { $bsize = atom_size * 2 }
+    $bselected = -1
+    $bselected_begin = -1
+    $break = 0
+    $tcnt = 0
+    while( $break == 0 )
+    {
+	transp( 16 + $tcnt ) $tcnt + 2
+	clear( BLACK )
+	transp( 256 )
+	if $name == -1
+	{
+	    $yy = - ( $b * $bsize ) div 2
+	}
+	else
+	{
+	    $yy = - ( ( $b + 1 ) * $bsize ) div 2
+	    dialog_draw_button( $name, $yy, $bsize, 0, 1 )
+	    $yy + $bsize
+	}
+	$y = $yy
+	$i = 0 while( $i < $b )
+	{
+	    $sel = 0
+	    if $i == $bselected { $sel = 1 }
+	    dialog_draw_button( $buttons[ $i ], $y, $bsize, $sel, 0 )
+	    $y + $bsize
+	    $i + 1
+	}
+	pixi( button_back, -hxsize + dlg_back_size / 2, 0 )
+	while( get_event() )
+	{   
+	    if EVT[ EVT_TYPE ] == EVT_MOUSEBUTTONDOWN 
+	    { 
+		if EVT[ EVT_X ] < -hxsize + dlg_back_size
+		{
+		    $bselected = -1
+		    $bselected_begin = -1
+		}
+		else
+		{
+		    $bselected = ( EVT[ EVT_Y ] - $yy ) div $bsize 
+		    $bselected_begin = $bselected
+		}
+	    } 
+	    if EVT[ EVT_TYPE ] == EVT_MOUSEMOVE 
+	    { 
+		if EVT[ EVT_KEY ] & 1
+		{
+		    if EVT[ EVT_X ] < -hxsize + dlg_back_size
+		    {
+			$bselected = -1
+		    }
+		    else
+		    {
+			$bselected = ( EVT[ EVT_Y ] - $yy ) div $bsize 
+		    }
+		}
+	    } 
+	    if EVT[ EVT_TYPE ] == EVT_MOUSEBUTTONUP 
+	    {
+		if $bselected_begin < 0 || $bselected_begin >= $b
+		{
+		    $break = 1
+		}
+		else
+		{
+		    if ( $bselected >= 0 ) && ( $bselected < $b ) { $break = 1 } 
+		}
+	    }
+	    if EVT[ EVT_TYPE ] == EVT_QUIT { $break = 1 exit_request = 1 } 
+	}
+	frame()
+    }
+    $rv = $bselected
+    if $rv >= $b { $rv = -1 }
+    if $rv < 0 { $rv = -1 }
+    remove( $buttons )
+    ret( $rv )
+}

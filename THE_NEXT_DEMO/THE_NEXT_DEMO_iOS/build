@@ -1,0 +1,8 @@
+rm layout/Applications/the_next_demo.app/boot.pixi
+rm layout/.*
+rm layout/Applications/.*
+cp ../demo.pixi layout/Applications/the_next_demo.app/boot.pixi
+cp ../sound.wav layout/Applications/the_next_demo.app/
+dpkg-deb -b layout
+mv layout.deb the_next.deb
+rm layout/Applications/the_next_demo.app/sound.wav

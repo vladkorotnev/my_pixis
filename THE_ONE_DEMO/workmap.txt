@@ -1,0 +1,23 @@
+On start begin sine
+On > 1290000 begin grafix >289 bg!
+On > 3850000 begin zoom
+On > 516 begin more stuff (low)
+On > 658 begin more of same
+On > 801 begin rep
+On > 960 begin more rep
+> 1056 more fast
+? 1191 soft
+? 1270 faster
+? 1367 more
+? 1591 more
+-- ? 1612 rep
+? 1738 more fast
+? 1813 more fast
+? 1874 solo
+? 1925 effect
+? 2019 more soft
+? 2162 more rep
+? 2410 more fast
+? 2555 more fst
+? 2608 fast soft
+2685 end

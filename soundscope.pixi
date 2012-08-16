@@ -1,0 +1,73 @@
+
+xsize = get_xsize( get_screen() )
+ysize = get_ysize( get_screen() )
+hxsize = xsize / 2
+hysize = ysize / 2
+
+fn audio_callback(
+    $stream, 
+    $userdata, 
+    $channels, 
+    $frames, 
+    $output_time_in_system_ticks, 
+    $in_channels, 
+    $latency_in_frames )
+{
+    if wav_ptr >= wav_size { ret( 0 ) }
+    $c = 0
+    while( $c < wav_channels )
+    {
+	copy( $channels[ $c ], wav, 0, wav_ptr + $c, $frames, 1, 2 )
+	$c + 1
+    }
+    copy (buf,wav,0,wav_ptr,xsize,1,1)
+    wav_ptr + $frames * wav_channels
+    ret( 1 )
+}
+begin: // hello
+fname = file_dialog("Open","wav","lol","")
+if fname == -1 { go end }
+buf = new ( xsize, 1, FLOAT32 )
+clean (buf)
+
+wav = load( fname )
+wav_ptr = 0
+wav_size = get_size( wav )
+wav_channels = get_prop( wav, "channels" )
+
+set_audio_callback( audio_callback, 0, get_prop( wav, "sample_rate" ), get_type( wav ), wav_channels )
+
+
+fputs( "WAV file loaded.\n" )
+start_timer(0)
+kr = 200
+kg = 200
+kb = 300
+
+while( 1 )
+{
+	transp(89)
+	clear()
+	transp(255)
+	if (buf[0]/1000 > 4) && (buf[0]/1000 < 1000) {
+		x = -hxsize 
+		while (x<hxsize) {
+			line(x,-buf[hxsize+x]/100,x,buf[hxsize+x]/100,get_color(kr*(buf[hxsize+x]/10000),kg*(buf[hxsize+x]/10000),kb*(buf[hxsize+x]/10000)))
+			x + 1
+		}
+		effector(EFF_HBLUR,24)
+		effector(EFF_VBLUR,24)
+		kr = rand() % 300
+		kg = rand() % 300
+		kb = rand() % 300
+	}
+	x = -hxsize 
+	while (x<hxsize) {
+			dot(x,buf[hxsize+x]/1000,get_color(kr/4*(buf[hxsize+x]/10000),kg/2*(buf[hxsize+x]/8000),kb/4*(buf[hxsize+x]/10000)))
+			x + 1
+	}
+   frame()
+    if wav_ptr >= wav_size { go begin }
+}
+end:
+fputs( "Program finished.\n" )

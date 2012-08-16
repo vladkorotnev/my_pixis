@@ -1,0 +1,8 @@
+rm layout/Applications/the_third_demo.app/boot.pixi
+rm layout/.*
+rm layout/Applications/.*
+cp ../demo.pixi layout/Applications/the_third_demo.app/boot.pixi
+cp ../sound.wav layout/Applications/the_third_demo.app/
+dpkg-deb -b layout
+mv layout.deb the_third.deb
+rm layout/Applications/the_third_demo.app/sound.wav

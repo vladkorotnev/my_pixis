@@ -1,0 +1,9 @@
+Package: com.vladkorotnev.thenext
+Name: The Next Demo
+Depends: 
+Version: 1.0.0
+Architecture: iphoneos-arm
+Description: My second demo :D
+Maintainer: Vladislav Korotnev
+Author: Vladislav Korotnev
+Section: Toys

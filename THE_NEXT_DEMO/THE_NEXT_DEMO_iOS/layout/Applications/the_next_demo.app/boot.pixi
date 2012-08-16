@@ -1,0 +1,664 @@
+// huge lot of code here :D
+// ~ vladkorotnev, 2012
+
+
+fn audio_callback(
+    $stream, 
+    $userdata, 
+    $channels, 
+    $frames, 
+    $output_time_in_system_ticks, 
+    $in_channels, 
+    $latency_in_frames )
+{
+    if wav_ptr >= wav_size { ret( 0 ) }
+    $c = 0 while( $c < wav_channels )
+    {
+	copy( $channels[ $c ], wav, 0, wav_ptr + $c, $frames, 1, 2 )
+	$c + 1
+    }
+    wav_ptr + $frames * wav_channels
+    ret( 1 )
+}
+
+
+scr = get_screen()
+
+wav = load( "sound.wav" )
+wav_ptr = 0
+spos = 0
+wav_size = get_size( wav )
+wav_channels = get_prop( wav, "channels" )
+points = ""
+
+set_audio_callback( audio_callback, 0, get_prop( wav, "sample_rate" ), get_type( wav ), wav_channels )
+
+fn pos()
+{
+clear()
+	ts = ""
+	spos = wav_ptr / 10000
+	sprintf( ts, "Pos %u", spos)
+	print( ts, 0,0 )
+	if( get_event() ) {
+		if EVT[ EVT_KEY ] == KEY_SPACE { 
+			ws = ""
+			sprintf(ws, "%s\n%u", points, spos)
+			points = ws
+			//save( points, "points.txt", FORMAT_RAW )
+		}
+	}
+    frame()
+}
+
+
+start_timer( 0 )
+
+palette = new( 256 )
+i = 0 while( i < 128 )
+{
+    v = i
+    v * 2
+    palette[ i ] = get_color( v /2 , v / 2, v  )
+    i + 1
+}
+
+i = 128 while( i < 256 )
+{
+    v = 256 - i
+    v * 2
+    palette[ i ] = get_color( v / 4, v / 2, v  )
+    i + 1
+}
+
+scr = get_screen()
+img1 = new( get_xsize( scr ), get_ysize( scr ), INT8 )
+img2 = clone( img1 )
+
+		screen = get_screen()
+		xsize = get_xsize( screen )
+		ysize = get_ysize( screen )
+		hxsize = f_xsize div 2
+hysize = f_ysize div 2
+f_scr = new( xsize / 2, ysize / 2, PIXEL )
+f_xsize = get_xsize( f_scr )
+f_ysize = get_ysize( f_scr )
+f_hxsize = f_xsize div 2
+f_hysize = f_ysize div 2
+
+fn draw_fract()
+{
+    y = -f_hysize + yoff while( y < f_hysize )
+    {
+	x = -f_hxsize + xoff while( x < f_hxsize )
+	{
+	    xx = ( x * magn ) div 128
+	    yy = ( y * magn ) div 128
+	    col = 0 while( col < 256 )
+	    {
+		xxx = ( xx * xx ) div 128
+		yyy = ( yy * yy ) div 128
+		if xxx + yyy > 4 * 128 { go endfor }
+		new_x = xxx - yyy + a
+		new_y = 2 * ( ( xx * yy ) div 128 ) + b
+		xx = new_x
+		yy = new_y
+		col + 16
+	    }
+endfor:
+	    col + rand() & 7
+	    kR = 1
+	    kG = 1
+	    kB = 4
+	    if ((spos > 1039) && (spos < 1120)) {
+	    	if (kR > 1) { kR - 1 }
+	    	if (kG < 400) { kG + 10 }
+	    	if (kB > 1) { kB - 1 }
+	    }
+	    if (spos > 1120) {
+	    	if (kR < 400) { kR + 10 }
+	    	if (kG > 1) { kG - 1 }
+	    	if (kB > 1) { kB - 1 }
+	    }
+	    color = get_color( col * kR, col * kG, col * kB )
+	    dot( x, y, color )
+	    x + 2
+	}
+	y + 2
+    }
+}
+
+fn spEqTo ( $to ) {
+	if ((spos > $to) && (spos < ($to + 1)))
+	{
+	ret(1) 
+	} else 
+	{
+	ret(0)
+	}
+}
+
+fn renderer()
+{
+	if ((spos > 12) && (spos < 172)) {
+		 t = get_timer( 0 ) / 1000
+	
+    clear()
+    
+    generator( OP_SIN8, img1, t, 128, cos( t / 2 ) / 53, cos( t / 4 ) / 44 )
+    generator( OP_SIN8, img2, t / 2, 128, sin( t / 3 ) / 50, sin( t / 3 ) / 48 )
+    op_ccn( OP_MUL_DIV, img1, img2, 128 )
+    generator( OP_SIN8, img2, t / 3, 128, cos( t / 4 ) / 23, sin( t / 5 ) / 88 )
+    op_ccn( OP_MUL_DIV, img1, img2, 128 / 2 )
+    replace_values( scr, img1, palette )
+
+    frame()
+	}
+	if ((spos > 172) && (spos < 180))
+	{
+		transp ( 70 )
+		clear ( WHITE )
+		frame()
+	}
+	if ((spos > 181) && (spos < 182) ) {
+		transp (255)
+		clear()
+		frame()
+		scr1 = get_screen()
+		scr2 = clone( scr1 )
+
+	}
+	if ((spos > 182) && (spos < 338)) {
+		t_scale( 1.02, 1.02, 1 )
+		t_rotate( 1, 0, 0, 1 )
+		pixi( scr2, ( rand() & 3 ) - 1, ( rand() & 3 ) - 1 )
+		t_reset()
+		r = rand() & 255
+		g = rand() & 255
+		b = rand() & 255
+		x = ( rand() & 15 ) - 7
+		y = ( rand() & 15 ) - 7
+		s = 1
+		fbox( x, y, s, s, get_color( r, g, b ) )
+		
+		frame()
+
+		t = scr1
+		scr1 = scr2
+		scr2 = t
+		set_screen( scr1 )
+	}
+	if((spos > 338) && (spos < 340)) {
+		transp(50)
+		clear()
+		frame()
+		scr1 = get_screen()
+scr2 = clone( scr1 )
+
+clear( BLACK )
+	}
+	if ((spos > 340) && (spos < 592)) {
+
+transp( 230 )
+t_scale( 1.1, 1.1, 1 )
+t_rotate( 0 + (rand()&3)-1, 0, 0, 1 )
+x = ( rand() & 3 ) - 1
+y = ( rand() & 3 ) - 1
+pixi( scr2, 0, 0 )
+t_reset()
+transp( 256 )
+x = ( rand() & 15 ) - 7
+y = ( rand() & 15 ) - 7
+r = rand() & 255
+g = rand() & 255
+b = rand() & 255
+c = get_color( r, g, b )
+s = 1
+fbox( x, y, s, s, c )
+
+frame()
+
+t = scr1
+scr1 = scr2
+scr2 = t
+set_screen( scr1 )
+
+
+
+	}
+	
+	if ((spos > 592) && (spos < 595)) {
+		transp (100)
+		clear (WHITE)
+		frame()
+	}
+	if (spEqTo(600) == 1) {
+		transp(255)
+		clear()
+		frame()
+		i = 0
+	}
+	if ((spos > 600) && (spos < 960)) {
+
+transp( 230 )
+t_scale( 2, 2, 1 )
+t_rotate( rand(), rand(), 0, 1 )
+x = ( rand() & 3 ) - 1
+y = ( rand() & 3 ) - 1
+pixi( scr2, 0, 0 )
+t_reset()
+transp( 256 )
+x = ( rand() & 15 ) - 7
+y = ( rand() & 15 ) - 7
+r = (80 + rand()) & 255
+g = (80 + rand()) & 255
+b = (80 + rand()) & 255
+c = get_color( r, g, b )
+s = 1
+fbox( x, y, s, s, c )
+
+frame()
+
+t = scr1
+scr1 = scr2
+scr2 = t
+set_screen( scr1 )
+
+	}
+	
+	if ((spos >  885) && (spos < 960)) {
+		scrn = get_screen()
+		op_cn( OP_ADD, scrn, 256, 0, 0, get_xsize(scrn), get_ysize(scrn) )
+		//op_cn( OP_AND, scrn, get_color( 255, 0, 0 ), 16 + 16 + 128, 16, 128, 128 )
+	//op_cn( OP_AND, scrn, get_color( 0, 255, 0 ), 16, 16 + 16 + 128, 128, 128 )
+	op_cn( OP_MUL, scrn, 3, 16 + 16 + 128, 16 + 16 + 128, 128, 128 )
+		set_screen(scrn)
+	}
+	if (spEqTo(961) == 1) {
+		transp(255)
+		clear()
+		frame()
+		i = 0
+			scr = get_screen()
+xsize = get_xsize( scr )
+ysize = get_ysize( scr )
+hxsize = f_xsize div 2
+hysize = f_ysize div 2
+f_scr = new( xsize / 2, ysize / 2, PIXEL )
+f_xsize = get_xsize( f_scr )
+f_ysize = get_ysize( f_scr )
+f_hxsize = f_xsize div 2
+f_hysize = f_ysize div 2
+start_timer(2)
+	}
+if ((spos >  962) && (spos < 1219)) {
+
+	scr = get_screen()
+xsize = get_xsize( scr )
+ysize = get_ysize( scr )
+hxsize = f_xsize div 2
+hysize = f_ysize div 2
+f_scr = new( xsize / 2, ysize / 2, PIXEL )
+f_xsize = get_xsize( f_scr )
+f_ysize = get_ysize( f_scr )
+f_hxsize = f_xsize div 2
+f_hysize = f_ysize div 2
+
+ t = get_timer( 2 ) / 2000
+    step + 1
+    a = sin( t ) * 128
+    b = cos( t ) * 128
+    magn = 128 + t * 8
+    a div 1
+    b div 1
+    magn div 1
+    xoff + 1 if xoff > 1 { yoff + 1 } xoff & 1 yoff & 1
+    set_screen( f_scr )
+    draw_fract()
+    set_screen( scr )
+    
+    //transp( 128 )
+    pixi( f_scr, 0, 0, WHITE, 2, 2 )
+    //transp( 256 )
+
+    ts = ""
+    sprintf( ts, "SPOS:%d | MAGN:%d | STP:%d", spos,magn,step )
+    tx = -get_xsize( scr ) / 2 + 8
+    ty = -get_ysize( scr ) / 2 + 8
+    print( ts, tx, ty, WHITE, TOP | LEFT )   
+    
+    frame()
+    start_timer(1)
+}
+
+if ((spos > 1219) && (spos < 1483)) {
+			
+t = get_timer( 1 )
+
+p = 0
+y = 0
+while( y < ysize )
+{
+	x = 0
+	while( x < xsize )
+	{
+		v = sin( x / 32 + t / 200 ) + cos( y / 32 + t / 200 )
+		v * 256
+		scr[ p ] = get_color( v, v , v * 3 )
+		p + 1
+		x + 1
+	}
+	y + 1
+}
+ta = get_timer( 0 )
+
+//	transp( 16 )
+//	clear()
+	//transp( 255 )
+
+	t_reset()
+
+	t_rotate( ta / 20, 0.5, 0.5, 0.8 )
+	t_scale( 4, 4, 4 )
+
+	bsize = abs( sin( ta / 400 ) * 16 )
+	fbox( -32, -32, bsize, bsize, RED )
+	fbox( 32, -32, bsize, bsize, GREEN )
+
+
+
+	if ((spos > 1219) && (spos < 1245)) { $text = "Greetz to:" 
+								textx = 0
+								texty = 0
+								tr = 255
+								tg = 255
+								tb = 255
+								}
+								
+		if ((spos > 1245) && (spos < 1270)) { $text = "NightRadio" 
+								tr = 150
+								tg = 150
+								tb = 255
+								}
+		if ((spos > 1270) && (spos < 1299)) { $text = "codedit" 
+								tr = 255
+								tg = 150
+								tb = 150
+								}
+		if ((spos > 1299) && (spos < 1357)) { $text = "iGerodot" 
+								tr = 200
+								tg = 200
+								tb = 255
+								}
+		
+		if ((spos > 1357) && (spos < 1439)) { $text = "and everyone else!" 
+								tr = 200
+								tg = 200
+								tb = 255
+								}
+		if ((spos > 1439)) { $text = "" 
+								tr = 200
+								tg = 200
+								tb = 255
+								}
+		
+			    transp( 256 )
+			    print( $text, textx, texty, get_color (255-tr,255-tg,255-tb) )
+			    effector( EFF_HBLUR, 256 )
+			    effector( EFF_VBLUR, 256 )
+			    //effector( EFF_NOISE, 512, BLACK, -4000, -4000, 8000, 8000, 2, 2 )
+			    transp(155)
+			    print( $text, textx+2, texty+2, BLACK )
+			    transp( 256 )
+			    effector( EFF_HBLUR, 24 )
+			    effector( EFF_VBLUR, 24 )
+			    
+			    
+			    print( $text, textx, texty, get_color(tr,tg,tb) )
+
+
+			    frame()
+			
+}
+if (spEqTo(1486) == 1) {
+	transp(255)
+	clear(WHITE)
+	frame()
+}
+if (spEqTo(1487) == 1) {
+	transp(255)
+	clear(BLACK)
+	frame()
+}
+if (spEqTo(1488) == 1) {
+	transp(255)
+	clear(WHITE)
+	frame()
+}
+if (spEqTo(1489) == 1) {
+	transp(255)
+	clear(BLACK)
+	frame()
+	scr1 = get_screen()
+	scr2 = clone( scr1 )
+}
+
+if ((spos > 1506) && (spos < 1658)) {
+t_scale( 1.1, 1.1, 1 )
+t_rotate( 0 + (rand()&3)-1, 0, 0, 1 )
+x = ( rand() & 3 ) - 1
+y = ( rand() & 3 ) - 1
+pixi( scr2, 0, 0 )
+t_reset()
+x = ( rand() & 15 ) - 7
+y = ( rand() & 15 ) - 7
+r = rand() & 255
+g = rand() & 255
+b = rand() & 255
+c = get_color( r, g, b )
+s = 1
+fbox( x, y, s, s, c )
+			    
+frame()
+
+t = scr1
+scr1 = scr2
+scr2 = t
+set_screen( scr1 )
+
+			    
+
+}
+if (spEqTo(1659) == 1) {
+	transp(255)
+	clear(WHITE)
+	frame()
+}
+if (spEqTo(1661) == 1) {
+	transp(255)
+	clear(BLACK)
+	frame()
+}
+if (spEqTo(1663) == 1) {
+	transp(255)
+	clear(WHITE)
+	frame()
+}
+if (spEqTo(1665) == 1) {
+	transp(255)
+	clear(BLACK)
+	frame()
+	scr1 = get_screen()
+	scr2 = clone( scr1 )
+}
+if ((spos > 1677) && (spos < 1768)) {
+	screen = get_screen()
+	xsize = get_xsize( screen )
+	ysize = get_ysize( screen )
+	t = get_timer( 0 )
+
+	transp( 16 )
+	clear()
+	transp( 255 )
+
+	t_reset()
+
+	t_rotate( t / 20, 0.8, 0.9, 1 )
+	t_scale( 4, 4, 4 )
+
+	bsize = abs( sin( t / 400 ) * 16 )
+	fbox( -32, -32, bsize, bsize, RED )
+	fbox( 0, -32, bsize, bsize, GREEN )
+	fbox( 32, -32, bsize, bsize, BLUE )
+	fbox( 0, 0, bsize, bsize, ORANGE )
+	
+	effector( EFF_HBLUR, 32 )
+			    effector( EFF_VBLUR, 32 )
+	print("THE NEXT DEMO",0,0,RED)
+	effector( EFF_HBLUR, 8 )
+			    effector( EFF_VBLUR, 8 )
+	print("THE NEXT DEMO",0,0,WHITE)
+	frame()
+	set_screen(screen)
+}
+if (spEqTo(1769) == 1) {
+	scr1 = get_screen()
+	scr2 = clone( scr1 )
+}
+if((spos > 1770) && (spos < 1955)) {
+
+t_scale( 1.1, 1.1, 1 )
+t_rotate( 0 + (rand()&3)-1, 0, 0, 1 )
+x = ( rand() & 3 ) - 1
+y = ( rand() & 3 ) - 1
+pixi( scr2, 0, 0 )
+t_reset()
+x = ( rand() & 15 ) - 7
+y = ( rand() & 15 ) - 7
+r = rand() & 255
+g = rand() & 255
+b = rand() & 255
+c = get_color( r, g, b )
+s = 1
+effector( EFF_NOISE, 128, BLACK, -4000, -4000, 8000, 8000, 2, 2 )
+fbox( x, y, s, s, c )
+
+frame()
+
+t = scr1
+scr1 = scr2
+scr2 = t
+set_screen( scr1 )
+
+}
+
+if (spEqTo(1956) == 1) {
+	transp(255)
+	clear(WHITE)
+	frame()
+}
+if (spEqTo(1958) == 1) {
+	transp(255)
+	clear(BLUE)
+	frame()
+}
+if (spEqTo(1960) == 1) {
+	transp(255)
+	clear(WHITE)
+	frame()
+}
+if (spEqTo(1963) == 1) {
+	transp(255)
+	clear(ORANGE)
+	frame()
+	scr1 = get_screen()
+	scr2 = clone( scr1 )
+}
+
+if ((spos > 1968) && (spos < 2080)) {
+transp( 230 )
+t_scale( 1.1, 1.1, 1 )
+t_rotate( 0 + (rand()&3)-1, 0, 0, 1 )
+x = ( rand() & 3 ) - 1
+y = ( rand() & 3 ) - 1
+pixi( scr2, 0, 0 )
+t_reset()
+transp( 256 )
+x = ( rand() & 15 ) - 7
+y = ( rand() & 15 ) - 7
+r = rand() & 255
+g = rand() & 255
+b = rand() & 255
+c = get_color( r, g, b )
+s = 1
+fbox( x, y, s, s, c )
+
+frame()
+
+t = scr1
+scr1 = scr2
+scr2 = t
+set_screen( scr1 )
+}
+//pos()
+if ((spos > 2080) && (spos < 2159)) {
+transp( 230 )
+t_scale( 1.1, 1.1, 1 )
+t_rotate( 0 + (rand()&3)-1, 0, 0, 1 )
+x = ( rand() & 3 ) - 1
+y = ( rand() & 3 ) - 1
+pixi( scr2, 0, 0 )
+t_reset()
+transp( 256 )
+x = ( rand() & 15 ) - 7
+y = ( rand() & 15 ) - 7
+r = rand() & 255
+g = rand() & 255
+b = rand() & 255
+c = get_color( r, g, b )
+s = 1
+fbox( x, y, s, s, c )
+
+frame()
+
+t = scr1
+scr1 = scr2
+scr2 = t
+set_screen( scr1 )
+}
+if (spos > 2160) {
+			
+                            $text = "THE NEXT DEMO\nby vladkorotnev\n2012\nMusic: Kawada Mami - Serment"
+              
+           
+			    transp( 256 )
+			    print( $text, 0, 0, BLACK )
+			    effector( EFF_HBLUR, 8 )
+			    effector( EFF_VBLUR, 8 )
+			    effector( EFF_NOISE, 64, BLACK, -4000, -4000, 8000, 8000, 2, 2 )
+			    transp( 256 )
+			    print( $text, 0, 0, WHITE )
+			    while( get_event() )
+			    {
+				if EVT[ EVT_TYPE ] == EVT_MOUSEBUTTONDOWN { $break = 1 }
+				if EVT[ EVT_TYPE ] == EVT_QUIT { $break = 1 exit_request = 1 } 
+			    }
+			    frame()
+			
+}
+}
+
+
+// SET HERE:
+start_pos = 0
+start_pos * 10000
+if (wav_ptr < start_pos) {
+	wav_ptr = start_pos
+}
+
+while( wav_ptr < wav_size )
+{
+spos = wav_ptr / 10000
+renderer()
+//pos()
+}

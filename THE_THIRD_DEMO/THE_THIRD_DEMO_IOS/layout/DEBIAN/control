@@ -1,0 +1,9 @@
+Package: com.vladkorotnev.thethird
+Name: The 3rd Demo
+Depends: 
+Version: 1.0.0
+Architecture: iphoneos-arm
+Description: My third demo :D
+Maintainer: Vladislav Korotnev
+Author: Vladislav Korotnev
+Section: Toys
