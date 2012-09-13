@@ -1,0 +1,119 @@
+
+xsize = get_xsize( get_screen() )
+ysize = get_ysize( get_screen() )
+hxsize = xsize / 2
+hysize = ysize / 2
+
+fn audio_callback(
+    $stream, 
+    $userdata, 
+    $channels, 
+    $frames, 
+    $output_time_in_system_ticks, 
+    $in_channels, 
+    $latency_in_frames )
+{
+    if wav_ptr >= wav_size { ret( 0 ) }
+    $c = 0
+    while( $c < wav_channels )
+    {
+	copy( $channels[ $c ], wav, 0, wav_ptr + $c, $frames, 1, 2 )
+	$c + 1
+    }
+    copy (buf,wav,0,wav_ptr,xsize,1,1)
+    wav_ptr + $frames * wav_channels
+    ret( 1 )
+}
+begin: // hello
+fname = file_dialog("Open","wav","lol","sound.wav")
+if fname == -1 { go end }
+buf = new ( xsize, 1, FLOAT32 )
+clean (buf)
+
+wav = load( fname )
+wav_ptr = 0
+wav_size = get_size( wav )
+wav_channels = get_prop( wav, "channels" )
+
+set_audio_callback( audio_callback, 0, get_prop( wav, "sample_rate" ), get_type( wav ), wav_channels )
+
+fn math_max ($a,$b) {
+	if ($a > $b) { ret( $a )}
+	if ($b > $a) { ret( $b )}
+	if ($a == $b) { ret( $a)}
+}
+
+fn math_min ($a,$b) {
+	if ($a > $b) { ret( $b )}
+	if ($b > $a) { ret( $a )}
+	if ($a == $b) { ret( $a)}
+}
+
+fputs( "WAV file loaded.\n" )
+start_timer(0)
+
+
+		
+mCurrentAngle = 0
+while( 1 )
+{
+		t = get_timer(0)
+				pivotRadius = 3.5
+		animationInterval = 50
+		pivotYOffset = hysize
+		shadowOffset=5
+		dropoffStep = 0.1
+		surgeStep = 0.35
+		minAngle = M_PI / 8
+		maxAngle = M_PI*7/8
+		angle = minAngle
+if (((t / animationInterval) - (t div animationInterval)) == 0) {
+
+
+
+		cur = abs(buf[1])
+		angle + ((maxAngle - minAngle)*cur/32768)
+		if(mCurrentAngle < angle) {
+			mCurrentAngle = angle
+		}
+		if(mCurrentAngle > angle) {
+			mCurrentAngle = math_max(angle, mCurrentAngle-dropoffStep)
+		}
+		if(mCurrentAngle == angle) {
+			mCurrentAngle = math_max(angle, mCurrentAngle-dropoffStep)
+		}
+		
+		mCurrentAngle = math_min(maxAngle, mCurrentAngle)
+		
+				pivotX = 0
+		pivotY = ysize - pivotRadius - pivotYOffset
+		l = (ysize*4)/5
+		sine = sin(mCurrentAngle)
+		cose = cos(mCurrentAngle)
+		xo = pivotX - l*cose
+		yo = pivotY - l*sine
+
+	transp(250)
+		clear()
+		transp(255)
+		line(xo+shadowOffset,yo+shadowOffset,pivotX+shadowOffset, pivotY + shadowOffset, get_color(50,50,50))
+		line(xo,yo,pivotX,pivotY,WHITE)
+		 frame()
+}
+
+while( get_event() ) 
+	{
+
+    		key = EVT[ EVT_KEY ]
+        	if key == KEY_RIGHT || key == '[' { wav_ptr + 10000 }
+        	if key == KEY_LEFT || key == ']' { wav_ptr - 10000 }
+    	
+	    if EVT[ EVT_TYPE ] == EVT_QUIT { halt } 
+	}
+
+
+  
+    if wav_ptr >= wav_size { go begin }
+}
+end:
+fputs( "Program finished.\n" )
